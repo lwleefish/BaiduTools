@@ -5,7 +5,7 @@ import re
 from crypto.bdrsa import Encrypt
 from . import DotDict
 #from . import DotDict
-#import pdb
+import pdb
 
 class LoginJson(DotDict):
 
@@ -14,14 +14,15 @@ class LoginJson(DotDict):
             if not data:
                 data = {"errInfo": DotDict({"no": -1, "msg": "Error"})}
             elif isinstance(data, dict):
-                DotDict.__init__(self, data)
-            else:
+                pass
+                #DotDict.__init__(self, data)
+            elif isinstance(data, str):
                 data = json.loads(data)
         except json.decoder.JSONDecodeError as e:
-            print(data)
             print(e)
             raise e
-    
+        DotDict.__init__(self, data)
+
 
 class BaiduClient(object):
     """百度登录所使用的信息"""
@@ -52,7 +53,6 @@ class BaiduClient(object):
         m = re.search(r',rsa:"(.*?)",error:', rsp.text) 
         if m:
             self.rsaPublicKeyModulus = m.group(1)
-            print(self.rsaPublicKeyModulus)
         else:
             self.rsaPublicKeyModulus = "B3C61EBBA4659C4CE3639287EE871F1F48F7930EA977991C7AFE3CC442FEA49643212E7D570C853F368065CC57A2014666DA8AE7D493FD47D171C0D894EEE3ED7F99F6798B7FFD7B5873227038AD23E3197631A8CB642213B9F27D4901AB0D92BFA27542AE890855396ED92775255C977F5C302F1E7ED4B1E369C12CB6B1822F"
     
@@ -62,7 +62,7 @@ class BaiduClient(object):
             raise IOError("网络不通")
         self.traceid = rsp.headers.get('Trace-Id', '')
 
-    def parseCookie(self, lj, cookie):
+    def parseCookie(self, lj: LoginJson, cookie: dict):
         for key, value in cookie.items():
             if "BDUSS" == key:
                 lj.data.BDUSS = value
@@ -70,8 +70,7 @@ class BaiduClient(object):
                 lj.data.PToken = value
             elif "STOKEN" == key:
                 lj.data.SToken = value
-            print(str(lj))
-            return lj
+        return lj
 
     def parsePhoneOrEmail(self, lj):
         rsp = self.session.get(lj.data.gotoUrl)
@@ -145,7 +144,7 @@ class BaiduClient(object):
                 self.send_code_to_user(vt, lj.data.token)
                 vcode = input("输入收到的验证码:")
                 lj = self.verify_code(vt, lj.data.token, vcode, lj.data.u)               
-                pdb.set_trace()
+                #pdb.set_trace()
                 return lj
             elif lj.errInfo.no == "400408":
                 print("该账号需进行身份信息验证。")
@@ -185,7 +184,7 @@ class BaiduClient(object):
         rsp = self.session.get(url, headers=header)
         if not rsp:
             raise IOError("验证失败")
-        #pdb.set_trace()
+        pdb.set_trace()
         body = rsp.text[len("jsonp1("):-1].strip()
         data = json.loads(body)
         lj = LoginJson(data)

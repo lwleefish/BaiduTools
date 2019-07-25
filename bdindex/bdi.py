@@ -53,7 +53,7 @@ class BaiduIndex(object):
             return None
         return key, index
     
-    def get_feed_index(self, keywords, days=30, startDate=None, endDate=None):
+    def get_feed_index(self, keywords: str, days: int=30, startDate: str=None, endDate: str=None):
         r"""获取关键词资讯指数
     
         :param keywords: 搜索词,如果有多个用逗号分隔, 最多不超过5个, 如：特朗普,奥巴马 str
@@ -73,7 +73,7 @@ class BaiduIndex(object):
             index['data']['index'][idx]['data'] = self._decrypt(key, data)
         return index['data']['index']
     
-    def get_search_index(self, keywords, days=30, startDate=None, endDate=None):
+    def get_search_index(self, keywords: str, days: int=30, startDate: str=None, endDate: str=None):
         """ 获取关键词百度搜索指数
     
         :param keywords: 搜索词,如果有多个用逗号分隔, 最多不超过5个, 如：特朗普,奥巴马 str
@@ -98,7 +98,7 @@ class BaiduIndex(object):
             index['data']['userIndexes'][idx]['generalRatio'] = index['data']['generalRatio'][idx]
         return index['data']['userIndexes']
     
-    def get_news_index(self, keywords, days=30, startDate=None, endDate=None):
+    def get_news_index(self, keywords: str, days: int=30, startDate: str=None, endDate: str=None)-> dict:
         """获取媒体指数
     
         :param keywords: 搜索词,如果有多个用逗号分隔, 最多不超过5个, 如：特朗普,奥巴马 str
@@ -118,14 +118,14 @@ class BaiduIndex(object):
             index['data']['index'][idx]['data'] = self._decrypt(key, data)
         return index['data']['index']
 
-    def get_hot_news(self, keywords, date_list):
+    def get_hot_news(self, keywords: str, *dates: tuple):
         """获取关键词 指定日期热点新闻
         
         :param keywords: 搜索词,如果有多个用逗号分隔, 最多不超过5个, 如：特朗普,奥巴马 str
-        :param date_list: 日期列表 list<str>
+        :param dates: 日期 tuple<str>
         :return 新闻字典对象 
         """
-        date = ",".join(date_list)
+        date = ",".join(dates)
         raw_date = date
         for i in range(1, len(keywords.split(","))):
             date = date + "&dates[]=" + raw_date
@@ -133,5 +133,38 @@ class BaiduIndex(object):
         print(url)
         rsp = requests.get(url, headers=self._ajax_header)
         rsp.encoding = "utf-8"
+        data = json.loads(rsp.text)
+        return data
+    
+    def get_social_distribution(self, startDate: str, endDate: str, *keywords: tuple):
+        """人群分布
+        "<=19, 20~29, 30~39, 40~49, >=50
+        param startDate: 开始月份如：20190601 
+        param endDate: 开始月份如：20190601 
+        param keyword: 搜索关键词
+        """
+        keys = "&wordlist[]=".join(keywords)
+        url = "http://index.baidu.com/api/SocialApi/getSocial?wordlist[]=%s&startdate=%s&enddate=%s" % (keys, startDate, endDate)
+        rsp = requests.get(url, headers=self._ajax_header)
+        rsp.codeing = "utf-8"
+        data = json.loads(rsp.text)
+        return data
+
+    def get_social_interest(self, typeid: str="", *keywords: tuple):
+        """兴趣分布 TGI"""
+        keys = "&wordlist[]=".join(keywords)
+        url = "http://index.baidu.com/api/SocialApi/getSocial?wordlist[]=%s&typeid=%s&callback=%s" % (keys, typeid, "jsonp1")
+        rsp = requests.get(url, headers=self._ajax_header)
+        rsp.codeing = "utf-8"
+        res = rsp.text[len("jsonp1("):-1]
+        data = json.loads(res)
+        return data
+    
+    def get_region(self, startDate: str, endDate: str, *keywords: tuple):
+        """地域分布"""
+        keys = "&wordlist[]=".join(keywords)
+        url = "http://index.baidu.com/api/SearchApi/region?region=0&word=%s&startDate=%s&endDate=%s" % (keys, startDate, endDate)
+        rsp = requests.get(url, headers=self._ajax_header)
+        rsp.codeing = "utf-8"
         data = json.loads(rsp.text)
         return data
